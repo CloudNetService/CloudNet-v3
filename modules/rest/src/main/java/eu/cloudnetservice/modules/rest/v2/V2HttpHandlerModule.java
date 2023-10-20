@@ -30,7 +30,7 @@ import eu.cloudnetservice.driver.network.http.annotation.RequestPathParam;
 import eu.cloudnetservice.node.config.Configuration;
 import eu.cloudnetservice.node.http.V2HttpHandler;
 import eu.cloudnetservice.node.http.annotation.BearerAuth;
-import eu.cloudnetservice.node.http.annotation.HandlerPermission;
+import eu.cloudnetservice.node.http.annotation.HandlerScope;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.io.IOException;
@@ -41,7 +41,6 @@ import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 
 @Singleton
-@HandlerPermission("http.v2.module")
 public final class V2HttpHandlerModule extends V2HttpHandler {
 
   private final ModuleProvider moduleProvider;
@@ -53,6 +52,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_write", "cloudnet_rest:module_reload_all"})
   @HttpRequestHandler(paths = "/api/v2/module/reload")
   private void handleReloadRequest(@NonNull HttpContext context) {
     this.moduleProvider.reloadAll();
@@ -65,6 +65,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_read", "cloudnet_rest:module_list"})
   @HttpRequestHandler(paths = "/api/v2/module")
   private void handleModuleListRequest(@NonNull HttpContext context) {
     this.ok(context)
@@ -81,12 +82,14 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_read", "cloudnet_rest:module_get"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}")
   private void handleModuleRequest(@NonNull HttpContext context, @NonNull @RequestPathParam("module") String name) {
     this.handleWithModuleContext(context, name, module -> this.showModule(context, module));
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_write", "cloudnet_rest:module_reload"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}/reload")
   private void handleModuleReloadRequest(@NonNull HttpContext ctx, @NonNull @RequestPathParam("module") String name) {
     this.handleWithModuleContext(ctx, name, module -> {
@@ -100,6 +103,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_write", "cloudnet_rest:module_unload"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}/unload")
   private void handleModuleUnloadRequest(@NonNull HttpContext ctx, @NonNull @RequestPathParam("module") String name) {
     this.handleWithModuleContext(ctx, name, module -> {
@@ -113,6 +117,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_write", "cloudnet_rest:module_load"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}/load", methods = "PUT")
   private void handleModuleLoadRequest(
     @NonNull HttpContext context,
@@ -138,6 +143,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_read", "cloudnet_rest:module_config_get"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}/config")
   private void handleModuleConfigRequest(@NonNull HttpContext ctx, @NonNull @RequestPathParam("module") String name) {
     this.handleWithModuleContext(ctx, name, module -> {
@@ -159,6 +165,7 @@ public final class V2HttpHandlerModule extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:module_write", "cloudnet_rest:module_config_update"})
   @HttpRequestHandler(paths = "/api/v2/module/{module}/config", methods = "POST")
   private void handleConfigUpdateRequest(
     @NonNull HttpContext ctx,

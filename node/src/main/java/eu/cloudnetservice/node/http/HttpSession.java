@@ -16,9 +16,7 @@
 
 package eu.cloudnetservice.node.http;
 
-import eu.cloudnetservice.driver.permission.PermissionUser;
 import java.util.Map;
-import java.util.UUID;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
@@ -31,9 +29,9 @@ public interface HttpSession {
 
   @NonNull String uniqueId();
 
-  @NonNull UUID userId();
+  @NonNull String userId();
 
-  @UnknownNullability PermissionUser user();
+  @UnknownNullability RestUser user();
 
   <T> @UnknownNullability T property(@NonNull String key);
 

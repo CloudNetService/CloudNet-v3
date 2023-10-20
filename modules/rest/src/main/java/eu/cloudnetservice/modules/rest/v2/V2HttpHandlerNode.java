@@ -35,18 +35,17 @@ import eu.cloudnetservice.driver.network.http.annotation.RequestBody;
 import eu.cloudnetservice.driver.network.http.websocket.WebSocketChannel;
 import eu.cloudnetservice.driver.network.http.websocket.WebSocketFrameType;
 import eu.cloudnetservice.driver.network.http.websocket.WebSocketListener;
-import eu.cloudnetservice.driver.permission.PermissionManagement;
 import eu.cloudnetservice.driver.provider.GroupConfigurationProvider;
 import eu.cloudnetservice.driver.provider.ServiceTaskProvider;
 import eu.cloudnetservice.node.cluster.NodeServerProvider;
 import eu.cloudnetservice.node.command.CommandProvider;
+import eu.cloudnetservice.node.command.source.DriverCommandSource;
 import eu.cloudnetservice.node.config.Configuration;
 import eu.cloudnetservice.node.config.JsonConfiguration;
 import eu.cloudnetservice.node.http.HttpSession;
 import eu.cloudnetservice.node.http.V2HttpHandler;
 import eu.cloudnetservice.node.http.annotation.BearerAuth;
-import eu.cloudnetservice.node.http.annotation.HandlerPermission;
-import eu.cloudnetservice.node.permission.command.PermissionUserCommandSource;
+import eu.cloudnetservice.node.http.annotation.HandlerScope;
 import eu.cloudnetservice.node.service.CloudServiceManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -58,7 +57,6 @@ import java.util.logging.LogRecord;
 import lombok.NonNull;
 
 @Singleton
-@HandlerPermission("http.v2.node")
 public final class V2HttpHandlerNode extends V2HttpHandler {
 
   private final Configuration configuration;
@@ -69,7 +67,6 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
   private final NodeServerProvider nodeServerProvider;
   private final CloudServiceManager cloudServiceManager;
   private final ServiceTaskProvider serviceTaskProvider;
-  private final PermissionManagement permissionManagement;
   private final GroupConfigurationProvider groupConfigurationProvider;
 
   @Inject
@@ -82,7 +79,6 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
     @NonNull NodeServerProvider nodeServerProvider,
     @NonNull CloudServiceManager cloudServiceManager,
     @NonNull ServiceTaskProvider serviceTaskProvider,
-    @NonNull PermissionManagement permissionManagement,
     @NonNull GroupConfigurationProvider groupConfigurationProvider
   ) {
     super(configuration.restConfiguration());
@@ -94,16 +90,17 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
     this.nodeServerProvider = nodeServerProvider;
     this.cloudServiceManager = cloudServiceManager;
     this.serviceTaskProvider = serviceTaskProvider;
-    this.permissionManagement = permissionManagement;
     this.groupConfigurationProvider = groupConfigurationProvider;
   }
 
+  @HandlerScope({"cloudnet_rest:node_read", "cloudnet_rest:node_ping"})
   @HttpRequestHandler(paths = "/api/v2/node", priority = HttpHandler.PRIORITY_LOW)
   private void handleNodePing(@NonNull HttpContext context) {
     this.response(context, HttpResponseCode.NO_CONTENT).context().closeAfter(true).cancelNext(true);
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:node_read", "cloudnet_rest:node_info"})
   @HttpRequestHandler(paths = "/api/v2/node")
   private void sendNodeInformation(@NonNull HttpContext context) {
     var nodeServer = this.nodeServerProvider.localNode();
@@ -120,6 +117,7 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:node_read", "cloudnet_rest:node_config_get"})
   @HttpRequestHandler(paths = "/api/v2/node/config")
   private void handleNodeConfigRequest(@NonNull HttpContext context) {
     this.ok(context)
@@ -130,6 +128,7 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:node_write", "cloudnet_rest:node_config_update"})
   @HttpRequestHandler(paths = "/api/v2/node/config", methods = "PUT")
   private void handleNodeConfigUpdateRequest(@NonNull HttpContext context, @NonNull @RequestBody Document body) {
     var configuration = body.toInstanceOf(JsonConfiguration.class);
@@ -154,6 +153,7 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
   }
 
   @BearerAuth
+  @HandlerScope({"cloudnet_rest:node_write", "cloudnet_rest:node_reload"})
   @HttpRequestHandler(paths = "/api/v2/node/reload")
   private void handleReloadRequest(
     @NonNull HttpContext context,
@@ -182,6 +182,7 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
       .cancelNext(true);
   }
 
+  @HandlerScope({"cloudnet_rest:node_read", "cloudnet_rest:node_live_console"})
   @HttpRequestHandler(paths = "/api/v2/node/liveConsole")
   private void handleLiveConsoleRequest(@NonNull HttpContext context, @NonNull @BearerAuth HttpSession session) {
     context.upgrade().thenAccept(channel -> {
@@ -195,7 +196,6 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
     this.configuration.reloadFrom(JsonConfiguration.loadFromFile());
     this.serviceTaskProvider.reload();
     this.groupConfigurationProvider.reload();
-    this.permissionManagement.reload();
   }
 
   protected class WebSocketLogHandler extends AbstractHandler implements WebSocketListener {
@@ -217,13 +217,14 @@ public final class V2HttpHandlerNode extends V2HttpHandler {
     public void handle(@NonNull WebSocketChannel channel, @NonNull WebSocketFrameType type, byte[] bytes) {
       var user = this.httpSession.user();
       if (type == WebSocketFrameType.TEXT && user != null) {
-        var commandLine = new String(bytes, StandardCharsets.UTF_8);
+        if (user.hasScope("cloudnet_rest:node_send_commands")) {
+          var commandLine = new String(bytes, StandardCharsets.UTF_8);
+          var commandSource = new DriverCommandSource();
+          V2HttpHandlerNode.this.commandProvider.execute(commandSource, commandLine).getOrNull();
 
-        var commandSource = new PermissionUserCommandSource(user, V2HttpHandlerNode.this.permissionManagement);
-        V2HttpHandlerNode.this.commandProvider.execute(commandSource, commandLine).getOrNull();
-
-        for (var message : commandSource.messages()) {
-          this.channel.sendWebSocketFrame(WebSocketFrameType.TEXT, message);
+          for (var message : commandSource.messages()) {
+            this.channel.sendWebSocketFrame(WebSocketFrameType.TEXT, message);
+          }
         }
       }
     }

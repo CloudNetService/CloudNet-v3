@@ -24,7 +24,6 @@ import eu.cloudnetservice.driver.module.ModuleProvider;
 import eu.cloudnetservice.driver.network.NetworkClient;
 import eu.cloudnetservice.driver.network.NetworkServer;
 import eu.cloudnetservice.driver.network.http.HttpServer;
-import eu.cloudnetservice.driver.permission.PermissionManagement;
 import eu.cloudnetservice.node.cluster.NodeServerProvider;
 import eu.cloudnetservice.node.console.Console;
 import eu.cloudnetservice.node.database.NodeDatabaseProvider;
@@ -56,7 +55,6 @@ public final class ShutdownHandler {
 
   // database stuff
   private final NodeDatabaseProvider databaseProvider;
-  private final PermissionManagement permissionManagement;
 
   @Inject
   public ShutdownHandler(
@@ -69,8 +67,7 @@ public final class ShutdownHandler {
     @NonNull HttpServer httpServer,
     @NonNull NetworkClient networkClient,
     @NonNull NetworkServer networkServer,
-    @NonNull NodeDatabaseProvider databaseProvider,
-    @NonNull PermissionManagement permissionManagement
+    @NonNull NodeDatabaseProvider databaseProvider
   ) {
     this.console = console;
     this.moduleProvider = moduleProvider;
@@ -82,7 +79,6 @@ public final class ShutdownHandler {
     this.networkClient = networkClient;
     this.networkServer = networkServer;
     this.databaseProvider = databaseProvider;
-    this.permissionManagement = permissionManagement;
   }
 
   public void shutdown() {
@@ -110,7 +106,6 @@ public final class ShutdownHandler {
 
         // close all the other providers
         LOGGER.info(I18n.trans("stop-providers"));
-        this.permissionManagement.close();
         this.databaseProvider.close();
 
         // stop & unload all modules
