@@ -32,7 +32,7 @@ import lombok.NonNull;
   dependencies = {
     @Dependency(name = "fabricloader", version = ">=0.15.0"),
     @Dependency(name = "minecraft", version = "~1.20.4"),
-    @Dependency(name = "java", version = ">=17")
+    @Dependency(name = "java", version = ">=21")
   },
   authors = "CloudNetService"
 )
