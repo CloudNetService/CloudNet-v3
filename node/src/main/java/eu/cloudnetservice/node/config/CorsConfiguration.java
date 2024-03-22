@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 CloudNetService team & contributors
+ * Copyright 2019-2023 CloudNetService team & contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package eu.cloudnetservice.node.config;
 
-import java.util.Map;
 import lombok.NonNull;
 
-public record RestConfiguration(
-  @NonNull CorsConfiguration cors,
-  @NonNull Map<String, String> headers,
-  int jwtValidTimeMinutes
+public record CorsConfiguration(
+  @NonNull String allowedOrigins,
+  @NonNull String allowedHeaders,
+  @NonNull String exposedHeaders,
+  @NonNull String allowedMethods,
+  boolean allowCredentials,
+  int maxAge
 ) {
 
 }

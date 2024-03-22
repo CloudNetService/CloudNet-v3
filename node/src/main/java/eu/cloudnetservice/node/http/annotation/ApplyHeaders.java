@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 CloudNetService team & contributors
+ * Copyright 2019-2023 CloudNetService team & contributors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package eu.cloudnetservice.node.config;
+package eu.cloudnetservice.node.http.annotation;
 
-import java.util.Map;
-import lombok.NonNull;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public record RestConfiguration(
-  @NonNull CorsConfiguration cors,
-  @NonNull Map<String, String> headers,
-  int jwtValidTimeMinutes
-) {
+/**
+ * Adds the configured headers (including the cors headers) from the config.json
+ *
+ * @since 4.0
+ */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface ApplyHeaders {
 
 }
